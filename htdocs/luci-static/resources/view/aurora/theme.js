@@ -34,7 +34,6 @@ const getIconsOnce = () => {
   return _iconsPromise;
 };
 
-let _checkUpdatesPromise = null;
 
 const callRemoveIcon = rpc.declare({
   object: "luci.aurora",
@@ -364,23 +363,6 @@ return view.extend({
   },
 
   load: function () {
-    if (!utils_version_api.versionCache?.get?.() && !_checkUpdatesPromise) {
-      _checkUpdatesPromise = fetch("/ubus/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify([{
-          id: 1, method: "call",
-          params: [L.env.sessionid, "luci.aurora", "check_updates", {}],
-        }]),
-      })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((res) => {
-          const data = res?.[0]?.result?.[1];
-          if (data) utils_version_api.versionCache?.set(data);
-          return data ?? null;
-        })
-        .catch(() => null);
-    }
     return Promise.all([
       uci.load("aurora"),
       L.resolveDefault(callGetThemeConfig(), {}),
@@ -1612,26 +1594,26 @@ return view.extend({
               (window.location.href = L.url("admin/system/aurora/version"));
         });
 
-        const cached = utils_version_api.versionCache.get();
+        const applyUpdateStatus = (data) => {
+          if (!data) return;
+          updateVersionLabel(labels.theme, data.theme?.update_available);
+          updateVersionLabel(labels.config, data.config?.update_available);
+        };
+
+        const cached = utils_version_api.versionCache?.get?.();
         if (cached) {
-          updateVersionLabel(labels.theme, cached?.theme?.update_available);
-          updateVersionLabel(labels.config, cached?.config?.update_available);
+          applyUpdateStatus(cached);
         } else {
-          L.resolveDefault(utils_version_api.callCheckUpdates(), null)
-            .then((updateData) => {
-              if (updateData) {
-                utils_version_api.versionCache.set(updateData);
-                updateVersionLabel(
-                  labels.theme,
-                  updateData?.theme?.update_available,
-                );
-                updateVersionLabel(
-                  labels.config,
-                  updateData?.config?.update_available,
-                );
-              }
-            })
-            .catch((err) => console.error("Failed to check version:", err));
+          setTimeout(() => {
+            L.resolveDefault(utils_version_api.callCheckUpdates(), null)
+              .then((data) => {
+                if (data) {
+                  utils_version_api.versionCache.set(data);
+                  applyUpdateStatus(data);
+                }
+              })
+              .catch(() => {});
+          }, 0);
         }
       });
 
