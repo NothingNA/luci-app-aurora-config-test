@@ -203,6 +203,7 @@ the `case "$1" in "list")` block at the end of the script. Common methods:
 
 | Method | Purpose |
 | --- | --- |
+| `get_init_data` | Read first-paint data in one RPC: installed versions, font presets, icons, and the active preset snapshot |
 | `get_theme_preset` | Read a preset snapshot for UI placeholders and comparison |
 | `apply_theme_preset` | Apply a preset (replaces all colors; keeps branding, fonts, layout, toolbar) |
 | `export_config` / `import_config` | Configuration import/export |

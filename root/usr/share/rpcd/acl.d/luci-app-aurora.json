@@ -9,6 +9,7 @@
           "get_installed_versions",
           "check_updates",
           "get_system_info",
+          "get_init_data",
           "get_theme_preset",
           "get_font_presets",
           "get_font_status",

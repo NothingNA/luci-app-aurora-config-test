@@ -657,6 +657,75 @@ parse_installed_packages() {
 	esac
 }
 
+json_add_installed_versions() {
+	local pkg_manager
+
+	pkg_manager=$(detect_package_manager)
+	parse_installed_packages "$pkg_manager"
+
+	json_add_object "theme"; json_add_string "installed_version" "$theme_inst"; json_close_object
+	json_add_object "config"
+		json_add_string "installed_version" "$config_inst"
+		json_add_string "i18n_packages" "$config_i18n"
+	json_close_object
+}
+
+json_add_font_presets() {
+	local slot_name
+
+	json_add_object "fonts"
+	for slot_name in sans mono; do
+		json_add_array "$slot_name"
+		while IFS='|' read -r _slot _name _label _source _family _stack _css_url; do
+			case "$_slot" in ""|"#"*) continue ;; esac
+			[ "$_slot" = "$slot_name" ] || continue
+			json_add_font "$_name" "$_label" "$_source" "$_family" "$_stack" "$_css_url"
+		done < "$FONT_PRESETS_FILE"
+		json_close_array
+	done
+	json_close_object
+}
+
+json_add_icons() {
+	local file
+
+	json_add_array "icons"
+	if [ -d "$ICON_PATH" ]; then
+		for file in "$ICON_PATH"/*; do
+			[ -f "$file" ] && json_add_string "" "${file##*/}"
+		done
+	fi
+	json_close_array
+}
+
+json_add_theme_preset_snapshot() {
+	local name="$1" template mode token value
+
+	template=$(resolve_preset_path "$name") || {
+		json_add_int "result" 1
+		json_add_string "error" "Unknown preset"
+		return
+	}
+
+	if ! load_preset_snapshot "$template"; then
+		json_add_int "result" 1
+		json_add_string "error" "Invalid preset content"
+		return
+	fi
+
+	json_add_int "result" 0
+	json_add_string "name" "$name"
+	json_add_object "colors"
+	for mode in light dark; do
+		for token in $COLOR_TOKEN_KEYS; do
+			value=$(uci -c "$PRESET_UCI_DIR" -q get "aurora.theme.${mode}_${token}")
+			json_add_string "${mode}_${token}" "$value"
+		done
+	done
+	json_close_object
+	cleanup_preset_snapshot
+}
+
 case "$1" in
 "list")
 	json_init
@@ -668,6 +737,7 @@ case "$1" in
 		json_add_string "filename" "filename"
 	json_close_object
 	json_add_object "reset_defaults"; json_close_object
+	json_add_object "get_init_data"; json_close_object
 	json_add_object "get_theme_preset"
 		json_add_string "name" "name"
 	json_close_object
@@ -703,6 +773,23 @@ case "$1" in
 
 "call")
 	case "$2" in
+	"get_init_data")
+		active_preset=$(uci -q get aurora.theme.active_preset)
+		[ -n "$active_preset" ] || active_preset="classic"
+
+		json_init
+		json_add_string "active_preset" "$active_preset"
+		json_add_object "versions"
+			json_add_installed_versions
+		json_close_object
+		json_add_font_presets
+		json_add_icons
+		json_add_object "theme_preset"
+			json_add_theme_preset_snapshot "$active_preset"
+		json_close_object
+		json_dump; json_cleanup
+		;;
+
 	"reset_defaults")
 		if [ -f "$CLASSIC_TEMPLATE" ]; then
 			cp "$CLASSIC_TEMPLATE" "$CONFIG_FILE"
@@ -721,44 +808,14 @@ case "$1" in
 		json_get_var name "name"
 		json_cleanup
 
-		template=$(resolve_preset_path "$name") || {
-			echo '{ "result": 1, "error": "Unknown preset" }'
-			exit 0
-		}
-
-		if ! load_preset_snapshot "$template"; then
-			echo '{ "result": 1, "error": "Invalid preset content" }'
-			exit 0
-		fi
-
 		json_init
-		json_add_int "result" 0
-		json_add_string "name" "$name"
-		json_add_object "colors"
-		for mode in light dark; do
-			for token in $COLOR_TOKEN_KEYS; do
-				value=$(uci -c "$PRESET_UCI_DIR" -q get "aurora.theme.${mode}_${token}")
-				json_add_string "${mode}_${token}" "$value"
-			done
-		done
-		json_close_object
+		json_add_theme_preset_snapshot "$name"
 		json_dump; json_cleanup
-		cleanup_preset_snapshot
 		;;
 
 	"get_font_presets")
 		json_init
-		json_add_object "fonts"
-		for slot_name in sans mono; do
-			json_add_array "$slot_name"
-			while IFS='|' read -r _slot _name _label _source _family _stack _css_url; do
-				case "$_slot" in ""|"#"*) continue ;; esac
-				[ "$_slot" = "$slot_name" ] || continue
-				json_add_font "$_name" "$_label" "$_source" "$_family" "$_stack" "$_css_url"
-			done < "$FONT_PRESETS_FILE"
-			json_close_array
-		done
-		json_close_object
+		json_add_font_presets
 		json_dump; json_cleanup
 		;;
 
@@ -881,13 +938,7 @@ case "$1" in
 
 	"list_icons")
 		json_init
-		json_add_array "icons"
-		if [ -d "$ICON_PATH" ]; then
-			for file in "$ICON_PATH"/*; do
-				[ -f "$file" ] && json_add_string "" "${file##*/}"
-			done
-		fi
-		json_close_array
+		json_add_icons
 		json_dump; json_cleanup
 		;;
 
@@ -964,15 +1015,8 @@ MANIFEST
 		;;
 
 	"get_installed_versions")
-		pkg_manager=$(detect_package_manager)
-		parse_installed_packages "$pkg_manager"
-
 		json_init
-		json_add_object "theme"; json_add_string "installed_version" "$theme_inst"; json_close_object
-		json_add_object "config"
-			json_add_string "installed_version" "$config_inst"
-			json_add_string "i18n_packages" "$config_i18n"
-		json_close_object
+		json_add_installed_versions
 		json_dump; json_cleanup
 		;;
 

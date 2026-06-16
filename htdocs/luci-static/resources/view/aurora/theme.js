@@ -45,6 +45,11 @@ const callListIcons = rpc.declare({
   method: "list_icons",
 });
 
+const callGetInitData = rpc.declare({
+  object: "luci.aurora",
+  method: "get_init_data",
+});
+
 let _iconsPromise = null;
 const getIconsOnce = () => {
   if (!_iconsPromise)
@@ -56,17 +61,6 @@ const callRemoveIcon = rpc.declare({
   object: "luci.aurora",
   method: "remove_icon",
   params: ["filename"],
-});
-
-const callGetThemePreset = rpc.declare({
-  object: "luci.aurora",
-  method: "get_theme_preset",
-  params: ["name"],
-});
-
-const callGetFontPresets = rpc.declare({
-  object: "luci.aurora",
-  method: "get_font_presets",
 });
 
 const callApplyThemePreset = rpc.declare({
@@ -196,6 +190,23 @@ const COLOR_GROUPS = [
 
 const cssTokenName = (key) => key.replaceAll("_", "-");
 const colorOptionName = (mode, key) => `${mode}_${key}`;
+
+const readThemeConfigFromUci = () => {
+  const config = {};
+  const copyOption = (option) => {
+    const value = uci.get("aurora", "theme", option);
+    if (value != null) config[option] = value;
+  };
+
+  copyOption("active_preset");
+  copyOption("struct_font_sans");
+  copyOption("struct_font_mono");
+  ["light", "dark"].forEach((mode) => {
+    COLOR_TOKENS.forEach(({ key }) => copyOption(colorOptionName(mode, key)));
+  });
+
+  return config;
+};
 
 const createColorResolver = () => {
   let framePromise = null;
@@ -916,23 +927,27 @@ return view.extend({
   load: function () {
     return Promise.all([
       uci.load("aurora"),
-      L.resolveDefault(utils_version_api.callGetInstalledVersions(), {}),
-      L.resolveDefault(callGetFontPresets(), {}),
-      getIconsOnce(),
-    ]).then((loadData) => {
+      L.resolveDefault(callGetInitData(), {}),
+    ]).then(([uciData, initData]) => {
       // Theme config comes from the uci cache populated by uci.load("aurora")
       // above, so no separate theme-config RPC is needed.
-      const themeConfig = uci.get_all("aurora", "theme") || {};
-      const activePreset = themeConfig.active_preset || "classic";
-      return L.resolveDefault(callGetThemePreset(activePreset), {
-        result: -1,
-        colors: {},
-      }).then((preset) => {
-        // Preserve the positional layout render() expects:
-        // [0]=uci [1]={theme} [2]=versions [3]=fonts [4]=icons [5]=preset
-        loadData.splice(1, 0, { theme: themeConfig });
-        return loadData.concat(preset);
-      });
+      const themeConfig = readThemeConfigFromUci();
+      const iconsData = {
+        icons: Array.isArray(initData?.icons) ? initData.icons : [],
+      };
+      if (Array.isArray(initData?.icons))
+        _iconsPromise = Promise.resolve(iconsData);
+
+      // Preserve the positional layout render() expects:
+      // [0]=uci [1]={theme} [2]=versions [3]=fonts [4]=icons [5]=preset
+      return [
+        uciData,
+        { theme: themeConfig },
+        initData?.versions || {},
+        { fonts: initData?.fonts || {} },
+        iconsData,
+        initData?.theme_preset || { result: -1, colors: {} },
+      ];
     });
   },
 
