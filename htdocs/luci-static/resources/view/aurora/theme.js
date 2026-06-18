@@ -1436,7 +1436,14 @@ return view.extend({
       mono: 'ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace',
     };
 
+    const fontOptionsCache = {};
     const buildFontOptions = (slot) => {
+      if (fontOptionsCache[slot]) return fontOptionsCache[slot];
+      fontOptionsCache[slot] = computeFontOptions(slot);
+      return fontOptionsCache[slot];
+    };
+
+    const computeFontOptions = (slot) => {
       const list = fontPresetsBySlot?.[slot];
       if (Array.isArray(list) && list.length > 0) {
         const options = list
