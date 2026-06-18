@@ -83,8 +83,8 @@ msgstr "套用失敗：%s"
 msgid ""
 "Apply the '%s' preset now? It is saved immediately and the page reloads. "
 "Presets set the light and dark colors only — layout, typography, branding, "
-"navigation, and toolbar revert to Aurora defaults."
-msgstr "立即套用「%s」預設嗎？這會立即儲存並重新載入網頁。預設僅設定亮色和暗色——版面配置、字體排版、品牌識別、導覽和工具列將恢復為 Aurora 預設值。"
+"navigation, and toolbar are left unchanged."
+msgstr "立即套用「%s」預設嗎？這會立即儲存並重新載入網頁。預設僅設定亮色和暗色——版面配置、字體排版、品牌識別、導覽和工具列保持不變。"
 
 #: applications/luci-app-aurora-config/htdocs/luci-static/resources/view/aurora/theme.js:1635
 msgid "Applying preset..."

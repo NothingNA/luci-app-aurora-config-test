@@ -83,8 +83,8 @@ msgstr "Uygulama başarısız oldu: %s"
 msgid ""
 "Apply the '%s' preset now? It is saved immediately and the page reloads. "
 "Presets set the light and dark colors only — layout, typography, branding, "
-"navigation, and toolbar revert to Aurora defaults."
-msgstr "'%s' hazır ayarı şimdi uygulansın mı? Hemen kaydedilir ve sayfa yeniden yüklenir. Hazır ayarlar yalnızca açık ve koyu renkleri ayarlar — düzen, tipografi, markalama, navigasyon ve araç çubuğu Aurora varsayılanlarına döner."
+"navigation, and toolbar are left unchanged."
+msgstr "'%s' hazır ayarı şimdi uygulansın mı? Hemen kaydedilir ve sayfa yeniden yüklenir. Hazır ayarlar yalnızca açık ve koyu renkleri ayarlar — düzen, tipografi, markalama, navigasyon ve araç çubuğu değişmeden kalır."
 
 #: applications/luci-app-aurora-config/htdocs/luci-static/resources/view/aurora/theme.js:1635
 msgid "Applying preset..."

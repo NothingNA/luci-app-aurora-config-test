@@ -81,15 +81,14 @@ msgstr "Ошибка применения: %s"
 
 #: applications/luci-app-aurora-config/htdocs/luci-static/resources/view/aurora/theme.js:1623
 msgid ""
-"Apply the '%s' preset now?\n"
-"It is saved immediately and the page reloads. \n"
-"Presets set the light and dark colors only — layout, typography, branding, \n"
-"navigation, and toolbar revert to Aurora defaults."
+"Apply the '%s' preset now? It is saved immediately and the page reloads. "
+"Presets set the light and dark colors only — layout, typography, branding, "
+"navigation, and toolbar are left unchanged."
 msgstr ""
 "Применить пресет «%s» сейчас?\n"
 "Он будет сразу сохранен, а страница перезагрузится.\n"
 "Пресеты настраивают только светлые и темные цвета — макет, типографика, брендинг,\n"
-"навигация и панель инструментов вернутся к значениям по умолчанию Aurora."
+"навигация и панель инструментов остаются без изменений."
 
 #: applications/luci-app-aurora-config/htdocs/luci-static/resources/view/aurora/theme.js:1635
 msgid "Applying preset..."
